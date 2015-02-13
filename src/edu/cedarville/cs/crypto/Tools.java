@@ -2,26 +2,20 @@ package edu.cedarville.cs.crypto;
 
 public class Tools {
 	
-	public static Integer[] convertFromStringToInts(String s) {
-		// pad to block size by adding spaces to the end of s
-		Integer[] ints = new Integer[s.length()]; // not correct length
-		return ints;
+	public static Integer[] convertFromBytesToInts(byte[] bs) {
+		return null;
 	}
 	
 	public static Integer[] convertFromHexStringToInts(String s) {
-		// pad to block size by adding 0s to the end of s
-		Integer[] ints = new Integer[s.length()]; // not correct length
-		return ints;
+		return null;
 	}
 	
-	public static String convertFromIntsToString(Integer[] ints) {
-		String s = "";
-		return s;
+	public static byte[] convertFromIntsToBytes(Integer[] ints) {
+		return null;
 	}
 	
 	public static String convertFromIntsToHexString(Integer[] ints) {
-		String s = "";
-		return s;
+		return null;
 	}
 
 }

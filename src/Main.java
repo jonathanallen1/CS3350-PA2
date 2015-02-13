@@ -1,8 +1,6 @@
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 
 import edu.cedarville.cs.crypto.TinyE;
 import edu.cedarville.cs.crypto.Tools;
@@ -26,7 +24,7 @@ public class Main {
 		// IV only valid for CBC and CTR modes
 		if (!mode.equals(TinyE.Mode.ECB)) {
 			iv = readInFile(ivFile, true);
-			validateLength(iv, 4, "IV");
+			validateLength(iv, 2, "IV");
 		}
 		// have all we need, now perform encyption / decryption
 		TinyE cipher = new TinyE();
@@ -104,14 +102,12 @@ public class Main {
 	
 	private static Integer[] readInFile(String filename, Boolean isHex) {
 		File file = openFile(filename);
-		String s = "";
+		int len = (int) file.length();
+		byte[] fileData = new byte[len];
 		try {
-			int len = (int) file.length();
-			byte[] fileData = new byte[len];
-			DataInputStream in = new DataInputStream(new FileInputStream(filename));
-			in.readFully(fileData);
+			FileInputStream in = new FileInputStream(filename);
+			while (in.read(fileData) != -1);
 			in.close();
-			s = new String(fileData,"UTF8").trim();
 		} catch (Exception e) {
 			System.out.println("trouble reading file:" + filename);
 			e.printStackTrace();
@@ -119,13 +115,11 @@ public class Main {
 		}
 		// for debugging only
 		System.out.println("read in from file: " + filename);
-		System.out.println(isHex ? "is hex data" : "is string data");
-		System.out.println("data read in:");
-		System.out.println("|" + s + "|");
 		if (isHex) {
+			String s = new String(fileData).trim();
 			return Tools.convertFromHexStringToInts(s);
 		} else {
-			return Tools.convertFromStringToInts(s);
+			return Tools.convertFromBytesToInts(fileData);
 		}
 	}
 	
@@ -141,25 +135,17 @@ public class Main {
 	}
 		
 	private static void writeOutputFile(Integer[] ints, String filename, Boolean isHex) {
-		String s = "";
+		byte[] bs = null;
 		if (isHex) {
-			s = Tools.convertFromIntsToHexString(ints);
+			bs = Tools.convertFromIntsToHexString(ints).getBytes();
 		} else {
-			s = Tools.convertFromIntsToString(ints);
+			bs = Tools.convertFromIntsToBytes(ints);
 		}
 		try {
-			// assume s is padded with blank spaces, so can safely trim them now
-			s = s.trim();
-			// writing files out as UTF-8 so reading them back in will work
-			OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(filename), "UTF8");
-			out.write(s);
-			out.flush();
+			FileOutputStream out = new FileOutputStream(filename);
+			out.write(bs);
 			out.close();
-			// for debugging only
-			System.out.println("writing out to file: " + filename);
-			System.out.println(isHex ? "is hex data" : "is string data");
-			System.out.println("data written out:");
-			System.out.println("|" + s + "|");
+			System.out.println("wrote out to: " + filename);
 		} catch (Exception e) {
 			System.out.println("trouble writing file:" + filename);
 			e.printStackTrace();
