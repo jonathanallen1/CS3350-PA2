@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 
 import edu.cedarville.cs.crypto.TinyE;
 import edu.cedarville.cs.crypto.Tools;
+import java.io.UnsupportedEncodingException;
 
 public class Main {
 
@@ -15,7 +16,7 @@ public class Main {
 	private static String keyFile;
 	private static String ivFile;
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnsupportedEncodingException {
 		parseArgs(args);
 		Integer[] key = readInFile(keyFile, true);
 		Integer[] input = readInFile(inputFile, isHex);
@@ -100,7 +101,7 @@ public class Main {
 		}
 	}
 	
-	private static Integer[] readInFile(String filename, Boolean isHex) {
+	private static Integer[] readInFile(String filename, Boolean isHex) throws UnsupportedEncodingException {
 		File file = openFile(filename);
 		int len = (int) file.length();
 		byte[] fileData = new byte[len];
