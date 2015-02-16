@@ -3,28 +3,144 @@ package edu.cedarville.cs.crypto;
 public class TinyE {
 	
     public static enum Mode { ECB, CBC, CTR };
-    private final String DELTA = "9E3779B9";
     private final int DELTA_INT = 0x9e3779b9;
 
     public Integer[] encrypt(Integer[] plaintext, Integer[] key, Mode mode, Integer[] iv) {
+        
+        Integer[] plainBlock = new Integer[2];
+        Integer[] cipherBlock = new Integer[2];
+        Integer[] ciphertext = new Integer[plaintext.length];
+        
         switch (mode) {
             case ECB:
-                // Stuff
-                break;
+                for (int i = 0; i < plaintext.length; i+=2) {
+                    plainBlock[0] = plaintext[i];
+                    plainBlock[1] = plaintext[i+1];
+                    try {
+                        cipherBlock = this.encryptBlock(plainBlock, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    ciphertext[i] = cipherBlock[0];
+                    ciphertext[i+1] = cipherBlock[1];
+                }
+                return ciphertext;
             case CBC:
-                // more stuff
-                break;
-            case CTR:
-                // more stuff
-                break;
-            default:
-                // problemo
+                Integer[] xor = iv;
+                
+                for (int i = 0; i < plaintext.length; i+=2) {
+                    plainBlock[0] = xor[0] ^ plaintext[i];
+                    plainBlock[1] = xor[1] ^ plaintext[i+1];
+                    try {
+                        cipherBlock = this.encryptBlock(plainBlock, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    
+                    xor[0] = cipherBlock[0];
+                    xor[1] = cipherBlock[1];
+                    
+                    ciphertext[i] = cipherBlock[0];
+                    ciphertext[i+1] = cipherBlock[1];
+                }
+                return ciphertext;
+            case CTR: 
+                long tempIV = ((((long)iv[0]) << 32) & 0xffffffff00000000l) |
+                        ((long)(iv[1] & 0x00000000ffffffffl));
+                
+                for (int i = 0; i < plaintext.length; i+=2) {
+                    try {
+                        cipherBlock = this.encryptBlock(iv, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    
+                    ciphertext[i] = plaintext[i] ^ cipherBlock[0];
+                    ciphertext[i+1] = plaintext[i+1] ^ cipherBlock[1];
+                    
+                    tempIV++;
+                    iv[0] = (int) (tempIV >> 32);
+                    iv[1] = (int) tempIV;
+                }
+                return ciphertext;
         }
-        
+                
         return null;
     }
 
     public Integer[] decrypt(Integer[] ciphertext, Integer[] key, Mode mode, Integer[] iv) {
+        
+        Integer[] cipherBlock = new Integer[2];
+        Integer[] plainBlock = new Integer[2];
+        Integer[] plaintext = new Integer[ciphertext.length];
+        
+        switch (mode) {
+            case ECB:
+                for (int i = 0; i < ciphertext.length; i+=2) {
+                    cipherBlock[0] = ciphertext[i];
+                    cipherBlock[1] = ciphertext[i+1];
+                    try {
+                        plainBlock = this.decryptBlock(cipherBlock, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    plaintext[i] = plainBlock[0];
+                    plaintext[i+1] = plainBlock[1];
+                }
+                return plaintext;
+            case CBC:
+                Integer[] xor = iv;
+                
+                for (int i = 0; i < ciphertext.length; i+=2) {
+                    cipherBlock[0] = ciphertext[i];
+                    cipherBlock[1] = ciphertext[i+1];
+                    try {
+                        plainBlock = this.decryptBlock(cipherBlock, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    
+                    plaintext[i] = xor[0] ^ plainBlock[0];
+                    plaintext[i+1] = xor[1] ^ plainBlock[1];
+                    
+                    xor[0] = ciphertext[i];
+                    xor[1] = ciphertext[i+1];
+                }
+                return plaintext;
+            case CTR:
+                long tempIV = ((((long)iv[0]) << 32) & 0xffffffff00000000l) |
+                        ((long)(iv[1] & 0x00000000ffffffffl));
+                
+                for (int i = 0; i < ciphertext.length; i+=2) {
+                    try {
+                        plainBlock = this.encryptBlock(iv, key);
+                    }
+                    catch (TEAException tiny) {
+                        System.err.println(tiny.getMessage());
+                        System.exit(1);
+                    }
+                    
+                    plaintext[i] = ciphertext[i] ^ plainBlock[0];
+                    plaintext[i+1] = ciphertext[i+1] ^ plainBlock[1];
+                    
+                    tempIV++;
+                    long l = tempIV >> 32;
+                    iv[0] = (int) (tempIV >> 32);
+                    iv[1] = (int) tempIV;
+                }
+                return plaintext;
+        }
+        
         return null;
     }
 

@@ -1,43 +1,91 @@
 package edu.cedarville.cs.crypto;
 
-import java.io.UnsupportedEncodingException;
-
 public class Tools {
-	
+	private static byte SPACE = 0b00100000;
+        
 	public static Integer[] convertFromBytesToInts(byte[] bs) {
-            Integer[] toReturn = new Integer[bs.length];
-            toReturn[0] = (bs[0]<<24) & 0xff000000;
-            toReturn[1] = (bs[1]<<16) & 0x00ff0000;
-            toReturn[2] = (bs[2]<<8)  & 0x0000ff00;
-            toReturn[3] = (bs[3]<<0)  & 0x000000ff;
+            // Add padding of spaces at end of string if it's size isn't divisible by 64 bits
+            int offset = bs.length % 8;
+            byte[] pad;
+            if (offset != 0) {
+                pad = new byte[bs.length + offset];
+            }
+            else {
+                pad = new byte[bs.length];
+            }
+            
+            // Copy the value over into the larger array and add padding
+            System.arraycopy(bs, 0, pad, 0, bs.length);
+            for (int i = bs.length; i < pad.length; i++) {
+                pad[i] = SPACE;
+            }
+            
+            // Each hex char is 4 bits, so 8 chars is 32 bits (1 int)
+            Integer[] toReturn = new Integer[pad.length/4];
+            
+            // Convert each 32 bit block in the hex string to an int
+            for (int i = 0; i < toReturn.length; i++) {
+                toReturn[i] = ((pad[(i*4)    ] << 24) & 0xff000000) 
+                            | ((pad[(i*4) + 1] << 16) & 0x00ff0000)
+                            | ((pad[(i*4) + 2] <<  8) & 0x0000ff00)
+                            | ((pad[(i*4) + 3]      ) & 0x000000ff);
+            }
             return toReturn;
 	}
 	
-	public static Integer[] convertFromHexStringToInts(String s) throws UnsupportedEncodingException {
-            Integer[] toReturn = new Integer[(s.length())/4];
-            toReturn[0] = (s.getBytes(s.substring(0, 2))[0]<<24) & 0xff000000;
-            toReturn[1] = (s.getBytes(s.substring(2, 4))[0]<<16) & 0x00ff0000;
-            toReturn[2] = (s.getBytes(s.substring(4, 6))[0]<<8)  & 0x0000ff00;
-            toReturn[3] = (s.getBytes(s.substring(6, 8))[0]<<0)  & 0x000000ff;
+	public static Integer[] convertFromHexStringToInts(String s) {
+            // Add padding of 0's at end of string if it's size isn't divisible by 64 bits
+            int offset = s.length() % 16;
+            String padded = s.toUpperCase();
+            if (offset != 0) {
+                for (int i = offset; i < 16; i++) {
+                    padded += "0";
+                }
+            }
+            
+            // Each hex char is 4 bits, so 8 chars is 32 bits (1 int)
+            Integer[] toReturn = new Integer[(padded.length())/8];
+            
+            // Convert each 32 bit block in the hex string to an int
+            for (int i = 0; i < toReturn.length; i++) {
+                if (i == toReturn.length-1) {
+                    toReturn[i] = Integer.parseUnsignedInt(
+                            padded.substring(i*8), 16);                    
+                }
+                else {
+                    toReturn[i] = Integer.parseUnsignedInt(
+                            padded.substring(i*8, (i+1)*8), 16);
+                }
+            }
             return toReturn;
 	}
 	
 	public static byte[] convertFromIntsToBytes(Integer[] ints) {
-            byte[] toReturn = new byte[ints.length];
-            toReturn[0] = ints[0].byteValue();
-            toReturn[1] = ints[1].byteValue();
-            toReturn[2] = ints[2].byteValue();
-            toReturn[3] = ints[3].byteValue();
+            byte[] toReturn = new byte[ints.length*4];
+            
+            for (int i = 0; i < ints.length; i++) {
+                toReturn[(4*i) + 0] = (byte) ((int) ints[i] >> 24);
+                toReturn[(4*i) + 1] = (byte) ((int) ints[i] >> 16);
+                toReturn[(4*i) + 2] = (byte) ((int) ints[i] >>  8);
+                toReturn[(4*i) + 3] = (byte) ((int) ints[i]);
+            }
+            
             return toReturn;
 	}
 	
 	public static String convertFromIntsToHexString(Integer[] ints) {
             String s = "";
-            s += Integer.toHexString(ints[0]);
-            s += Integer.toHexString(ints[1]);
-            s += Integer.toHexString(ints[2]);
-            s += Integer.toHexString(ints[3]);
+            // Need to do all 8 hex values separately so leading 0s aren't lost
+            for (Integer i : ints) {
+                s += Integer.toUnsignedString((i >> 28) & 0x0000000f, 16) 
+                   + Integer.toUnsignedString((i >> 24) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i >> 20) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i >> 16) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i >> 12) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i >>  8) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i >>  4) & 0x0000000f, 16)
+                   + Integer.toUnsignedString((i) & 0x0000000f, 16);
+            }
             return s;
 	}
-
 }
